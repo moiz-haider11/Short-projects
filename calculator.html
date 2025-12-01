@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fun Calculator</title>
+  <style>
+    :root{
+      --bg1:#0f172a;
+      --bg2:#0b3a66;
+      --card:#0b1220;
+      --glass: rgba(255,255,255,0.04);
+      --accent:#7dd3fc;
+      --accent-2:#a78bfa;
+      --btn:#1f2937;
+      --btn-2:#374151;
+      --op:#ff7a7a;
+      --ok:#34d399;
+      --muted:#94a3b8;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(124,58,237,0.12), transparent),
+                  radial-gradient(1000px 500px at 90% 90%, rgba(6,182,212,0.08), transparent),
+                  linear-gradient(135deg,var(--bg1),var(--bg2));
+      padding:28px;
+      color:#e6eef8;
+    }
+
+    .calculator{
+      width:460px;
+      max-width:96vw;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+      border-radius:16px;
+      padding:18px;
+      display:flex;
+      gap:16px;
+      box-shadow: 0 18px 50px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      transform: translateY(0);
+      transition: transform .25s ease;
+    }
+    .calculator:hover{ transform: translateY(-6px); }
+
+    /* Left side: display + keypad */
+    .left{
+      flex:1 1 auto;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    #display{
+      height:72px;
+      border-radius:12px;
+      border:0;
+      padding:14px 18px;
+      font-size:1.8rem;
+      text-align:right;
+      background: linear-gradient(180deg, rgba(7,16,33,0.7), rgba(7,16,33,0.5));
+      color:var(--accent);
+      box-shadow: inset 0 0 30px rgba(125,211,252,0.04), 0 8px 24px rgba(2,6,23,0.6);
+      outline:none;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+
+    /* Operators column */
+    .ops{
+      width:110px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:stretch;
+    }
+
+    /* Buttons */
+    button{
+      position:relative;
+      overflow:hidden;
+      user-select:none;
+      border:0;
+      border-radius:10px;
+      height:56px;
+      font-size:1.05rem;
+      font-weight:700;
+      color:#fff;
+      background: linear-gradient(180deg,var(--btn),var(--btn-2));
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .12s ease, background .18s ease;
+      box-shadow: 0 8px 18px rgba(2,6,23,0.45);
+    }
+    button:active{ transform: translateY(1px) scale(.997) }
+    button:hover{ transform: translateY(-6px) scale(1.02) }
+
+    /* Ripple effect element */
+    .ripple {
+      position:absolute;
+      border-radius:50%;
+      transform: scale(0);
+      background: rgba(255,255,255,0.12);
+      animation: ripple .6s linear;
+      pointer-events:none;
+    }
+    @keyframes ripple {
+      to { transform: scale(4); opacity:0; }
+    }
+
+    .zero{ grid-column: span 2; }
+    .muted{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); color:var(--muted); font-weight:700; }
+
+    .op{ background: linear-gradient(180deg, #ff7a7a, #e85b5b); box-shadow: 0 10px 22px rgba(232,91,91,0.14); }
+    .op.secondary{ background: linear-gradient(180deg, #ffb86b, #ff8a3d); box-shadow: 0 10px 22px rgba(255,138,61,0.12); }
+    .equals{ background: linear-gradient(180deg, #34d399, #10b981); box-shadow: 0 10px 22px rgba(16,185,129,0.12); height:120px; border-radius:12px; font-size:1.15rem; }
+
+    /* Make operators column buttons equal height distribution */
+    .ops button{ height:56px; }
+    .ops .equals{ height:128px; }
+
+    /* small label under display */
+    .sub {
+      font-size:0.78rem;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:center;
+    }
+
+    /* responsive */
+    @media (max-width:520px){
+      .calculator{ width:100%; padding:14px; gap:10px; }
+      .ops{ width:86px; }
+      #display{ height:60px; font-size:1.4rem; }
+      button{ height:50px; font-size:0.98rem; }
+      .ops .equals{ height:100px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator" role="application" aria-label="Fun calculator">
+    <div class="left">
+      <input id="display" type="text" disabled aria-label="Calculator display" />
+      <div class="sub">
+        <span id="mode">Standard</span>
+        <span id="memory-indicator"></span>
+      </div>
+
+      <div class="grid" role="group" aria-label="Number pad">
+        <button type="button" class="muted" onclick="applySqrt()" title="Square root">√</button>
+        <button type="button" class="muted" onclick="toggleSign()" title="Plus minus">+/-</button>
+        <button type="button" class="muted" onclick="percent()" title="Percent">%</button>
+
+        <button type="button" onclick="press('7')">7</button>
+        <button type="button" onclick="press('8')">8</button>
+        <button type="button" onclick="press('9')">9</button>
+
+        <button type="button" onclick="press('4')">4</button>
+        <button type="button" onclick="press('5')">5</button>
+        <button type="button" onclick="press('6')">6</button>
+
+        <button type="button" onclick="press('1')">1</button>
+        <button type="button" onclick="press('2')">2</button>
+        <button type="button" onclick="press('3')">3</button>
+
+        <button type="button" class="zero" onclick="press('0')">0</button>
+        <button type="button" onclick="press('.')">.</button>
+        <button type="button" class="muted" onclick="clearAll()">C</button>
+      </div>
+    </div>
+
+    <div class="ops" role="group" aria-label="Operators">
+      <button type="button" class="op" onclick="press('+')">+</button>
+      <button type="button" class="op" onclick="press('-')">−</button>
+      <button type="button" class="op secondary" onclick="press('*')">×</button>
+      <button type="button" class="op secondary" onclick="press('/')">÷</button>
+      <button type="button" class="equals" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    const memIndicator = document.getElementById('memory-indicator');
+    let expr = '';
+    let memory = null;
+
+    // Utility: create ripple on button
+    function rippleEffect(e){
+      const btn = e.currentTarget;
+      const circle = document.createElement('span');
+      circle.className = 'ripple';
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      circle.style.width = circle.style.height = size + 'px';
+      circle.style.left = (e.clientX - rect.left - size/2) + 'px';
+      circle.style.top = (e.clientY - rect.top - size/2) + 'px';
+      btn.appendChild(circle);
+      setTimeout(()=> circle.remove(), 600);
+    }
+
+    // Attach ripple to all buttons
+    document.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', rippleEffect);
+    });
+
+    function updateDisplay(){
+      display.value = expr || '0';
+    }
+
+    function press(ch){
+      const last = expr.slice(-1);
+      const isOp = /[+\-*/]/.test(ch);
+      const lastIsOp = /[+\-*/]/.test(last);
+
+      if(isOp){
+        if(expr === '' && ch !== '-') return;
+        if(lastIsOp){
+          // allow negative after operator like 5*-3
+          if(ch === '-' && last !== '-') expr += ch;
+          else expr = expr.slice(0, -1) + ch;
+        } else {
+          expr += ch;
+        }
+      } else if(ch === '.'){
+        const parts = expr.split(/[+\-*/]/);
+        const cur = parts[parts.length - 1];
+        if(cur.includes('.')) return;
+        if(cur === '') expr += '0.';
+        else expr += '.';
+      } else {
+        expr += ch;
+      }
+      updateDisplay();
+    }
+
+    function clearAll(){
+      expr = '';
+      updateDisplay();
+    }
+
+    function percent(){
+      try{
+        if(!expr) return;
+        // percent applies to last number: convert last number to its percent
+        const parts = expr.split(/([+\-*/])/);
+        let last = parts.pop();
+        const sep = parts.pop() || '';
+        if(last === '' || /[+\-*/]/.test(last)) return;
+        const val = parseFloat(last);
+        if(isNaN(val)) return;
+        const res = (val / 100).toString();
+        parts.push(sep, res);
+        expr = parts.join('');
+        updateDisplay();
+      }catch(e){}
+    }
+
+    function applySqrt(){
+      try{
+        if(!expr) return;
+        // apply sqrt to the whole expression result
+        const val = evaluateExpression(expr);
+        if(val < 0) { display.value = 'Error'; expr = ''; setTimeout(updateDisplay,800); return; }
+        expr = String(Math.sqrt(val));
+        updateDisplay();
+      }catch(e){}
+    }
+
+    function toggleSign(){
+      // toggle sign of last number
+      const parts = expr.split(/([+\-*/])/);
+      if(parts.length === 0) return;
+      let last = parts.pop();
+      const sep = parts.pop() || '';
+      if(last === '') return;
+      if(last.startsWith('-')) last = last.slice(1);
+      else last = '-' + last;
+      parts.push(sep, last);
+      expr = parts.join('');
+      updateDisplay();
+    }
+
+    function evaluateExpression(s){
+      if(/[^0-9+\-*/.() ]/.test(s)) throw new Error('Invalid');
+      return Function('"use strict"; return (' + s + ')')();
+    }
+
+    function calculate(){
+      if(!expr) return;
+      try{
+        const result = evaluateExpression(expr);
+        expr = String(result);
+        updateDisplay();
+      }catch(e){
+        display.value = 'Error';
+        expr = '';
+        setTimeout(updateDisplay, 900);
+      }
+    }
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      const key = e.key;
+      if((/^[0-9]$/).test(key)) press(key);
+      else if(key === '.') press('.');
+      else if(key === 'Enter' || key === '=') { e.preventDefault(); calculate(); }
+      else if(key === 'Backspace') { expr = expr.slice(0, -1); updateDisplay(); }
+      else if(key === '+' || key === '-' || key === '*' || key === '/') press(key);
+      else if(key === '%') percent();
+      else if(key.toLowerCase() === 'c') clearAll();
+    });
+
+    // Optional memory functions (M+, M-, MR) - quick implementation
+    // M+ : store current displayed value
+    // M- : clear memory
+    // MR : recall memory
+    // Use keyboard: m (store), r (recall), x (clear)
+    window.addEventListener('keydown', (e) => {
+      if(e.key.toLowerCase() === 'm'){ // store
+        try{
+          const val = evaluateExpression(expr || display.value || '0');
+          memory = val;
+          memIndicator.textContent = 'M';
+        }catch{}
+      } else if(e.key.toLowerCase() === 'r'){ // recall
+        if(memory !== null){ expr += String(memory); updateDisplay(); }
+      } else if(e.key.toLowerCase() === 'x'){ // clear memory
+        memory = null; memIndicator.textContent = '';
+      }
+    });
+
+    // initialize
+    updateDisplay();
+  </script>
+</body>
+</html>
